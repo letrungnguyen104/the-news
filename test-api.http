@@ -1,0 +1,27 @@
+### API 1: Tạo bài viết mới (Admin)
+POST http://localhost:8081/api/v1/admin/articles
+Content-Type: application/json
+
+{
+  "title": "Breaking News: Java Spring Boot is Awesome",
+  "content": "<p>This is the content of the breaking news. We successfully built a Microservices architecture.</p>",
+  "thumbnail": "https://example.com/image.png",
+  "authorId": 1
+}
+
+### 1. Tạo bài viết (Admin) -> Bấm Send Request
+POST http://localhost:8081/api/v1/admin/articles
+Content-Type: application/json
+
+{
+  "title": "Kien truc Microservices that vi dai",
+  "content": "Test cache content",
+  "thumbnail": "img.png",
+  "authorId": 1
+}
+
+### API 2: Đọc bài viết (User) - Lần 1 (Sẽ chậm, Cache Miss)
+GET http://localhost:8080/api/v1/articles/kien-truc-microservices-that-vi-dai
+
+### API 2: Đọc bài viết (User) - Lần 2 (Sẽ cực nhanh, Cache Hit)
+GET http://localhost:8080/api/v1/articles/kien-truc-microservices-that-vi-dai
