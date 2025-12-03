@@ -10,7 +10,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
+import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -36,23 +38,29 @@ public class ArticleReadService {
 
     if (dbArticle.isPresent()) {
       Article article = dbArticle.get();
+      List<ArticleCacheDto.PageDto> pageDtos = article.getPages().stream()
+          .map(p -> new ArticleCacheDto.PageDto(p.getPageNumber(), p.getImageUrl(), p.getContent()))
+          .sorted((p1, p2) -> p1.getPageNumber().compareTo(p2.getPageNumber()))
+          .collect(Collectors.toList());
+
       ArticleCacheDto dto = ArticleCacheDto.builder()
           .id(article.getId())
           .title(article.getTitle())
           .slug(article.getSlug())
+          .shortDescription(article.getShortDescription())
           .content(article.getContent())
           .thumbnail(article.getThumbnail())
           .status(article.getStatus().name())
           .createdAt(article.getCreatedAt())
           .authorName(article.getAuthor().getUsername())
+          .categoryName(article.getCategory() != null ? article.getCategory().getName() : "Uncategorized")
+          .pages(pageDtos)
           .build();
 
       log.info("Lưu DTO vào Redis...");
       redisCacheService.set(cacheKey, dto, CACHE_TTL);
-
       return Optional.of(dto);
     }
-
     return Optional.empty();
   }
 }

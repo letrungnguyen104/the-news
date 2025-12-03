@@ -21,6 +21,7 @@ public interface ArticleMapper {
   @Mapping(target = "updatedAt", ignore = true)
   @Mapping(target = "author", ignore = true)
   @Mapping(target = "category", ignore = true)
+  @Mapping(target = "pages", ignore = true)
   Article toEntity(CreateArticleRequest request);
 
   @Mapping(target = "authorName", source = "author.username")

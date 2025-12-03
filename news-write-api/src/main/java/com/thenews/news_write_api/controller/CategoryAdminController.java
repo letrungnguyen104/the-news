@@ -1,12 +1,15 @@
 package com.thenews.news_write_api.controller;
 
 import com.thenews.common.entity.Category;
+import com.thenews.news_write_api.dto.response.CategoryResponse;
+import com.thenews.news_write_api.mapper.CategoryMapper;
 import com.thenews.news_write_api.repository.CategoryRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/v1/admin/categories")
@@ -14,10 +17,14 @@ import java.util.List;
 public class CategoryAdminController {
 
   private final CategoryRepository categoryRepository;
+  private final CategoryMapper categoryMapper;
 
   @GetMapping
-  public ResponseEntity<List<Category>> getAll() {
-    return ResponseEntity.ok(categoryRepository.findAll());
+  public ResponseEntity<List<CategoryResponse>> getAll() {
+    List<CategoryResponse> list = categoryRepository.findAll().stream()
+        .map(categoryMapper::toResponse)
+        .collect(Collectors.toList());
+    return ResponseEntity.ok(list);
   }
 
   @GetMapping("/{id}")

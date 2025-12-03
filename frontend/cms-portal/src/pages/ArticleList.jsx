@@ -15,22 +15,24 @@ const ArticleList = () => {
 
   const [isViewModalVisible, setIsViewModalVisible] = useState(false);
   const [viewArticle, setViewArticle] = useState(null);
+  const [viewLoading, setViewLoading] = useState(false);
 
   useEffect(() => {
-    const fetchArticles = async () => {
-      setLoading(true);
-      try {
-        const res = await axiosClient.get('/admin/articles');
-        setArticles(res);
-        setFilteredArticles(res);
-      } catch (error) {
-        message.error('Không thể tải danh sách bài viết');
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchArticles();
   }, []);
+
+  const fetchArticles = async () => {
+    setLoading(true);
+    try {
+      const res = await axiosClient.get('/admin/articles');
+      setArticles(res);
+      setFilteredArticles(res);
+    } catch (error) {
+      message.error('Không thể tải danh sách bài viết');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleSearch = (e) => {
     const value = e.target.value.toLowerCase();
@@ -53,9 +55,7 @@ const ArticleList = () => {
         try {
           await axiosClient.delete(`/admin/articles/${id}`);
           message.success('Đã xóa bài viết thành công');
-          const newList = articles.filter(a => a.id !== id);
-          setArticles(newList);
-          setFilteredArticles(newList);
+          fetchArticles();
         } catch (error) {
           message.error('Xóa thất bại');
         }
@@ -63,10 +63,18 @@ const ArticleList = () => {
     });
   };
 
-  // --- Hàm xử lý khi bấm nút Xem ---
-  const handleView = (article) => {
-    setViewArticle(article);
+  const handleView = async (id) => {
     setIsViewModalVisible(true);
+    setViewLoading(true);
+    try {
+      const detail = await axiosClient.get(`/admin/articles/${id}`);
+      setViewArticle(detail);
+    } catch (error) {
+      message.error("Không thể tải chi tiết bài viết");
+      setIsViewModalVisible(false);
+    } finally {
+      setViewLoading(false);
+    }
   };
 
   const columns = [
@@ -90,18 +98,20 @@ const ArticleList = () => {
       title: 'Tiêu đề',
       dataIndex: 'title',
       key: 'title',
-      render: (text) => <span className="font-medium text-gray-800 line-clamp-1" title={text}>{text}</span>,
+      render: (text) => <span className="font-medium text-gray-800 line-clamp-2" title={text}>{text}</span>,
     },
     {
       title: 'Danh mục',
       dataIndex: 'categoryName',
       key: 'categoryName',
+      width: 150,
       render: (text) => <Tag color="cyan">{text || 'Chưa phân loại'}</Tag>,
     },
     {
       title: 'Tác giả',
       dataIndex: 'authorName',
       key: 'authorName',
+      width: 120,
       render: (text) => <Tag color="blue">{text}</Tag>,
     },
     {
@@ -132,7 +142,7 @@ const ArticleList = () => {
               type="text"
               icon={<EyeOutlined />}
               className="text-gray-500 hover:text-blue-600 hover:bg-blue-50"
-              onClick={() => handleView(record)}
+              onClick={() => handleView(record.id)}
             />
           </Tooltip>
           <Tooltip title="Chỉnh sửa">
@@ -160,7 +170,6 @@ const ArticleList = () => {
     <div className="bg-white p-6 rounded-xl shadow-sm">
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-xl font-bold text-gray-800">Quản lý bài viết</h2>
-
         <div className="flex gap-4">
           <Input
             placeholder="Tìm kiếm bài viết..."
@@ -168,7 +177,6 @@ const ArticleList = () => {
             onChange={handleSearch}
             className="w-64"
           />
-
           <Button
             type="primary"
             icon={<PlusOutlined />}
@@ -185,7 +193,7 @@ const ArticleList = () => {
         dataSource={filteredArticles}
         rowKey="id"
         loading={loading}
-        pagination={{ pageSize: 5 }}
+        pagination={{ pageSize: 8 }}
       />
 
       <Modal
@@ -207,40 +215,69 @@ const ArticleList = () => {
             Chỉnh sửa bài này
           </Button>
         ]}
-        width={800}
+        width={900}
         style={{ top: 20 }}
+        loading={viewLoading}
       >
         {viewArticle && (
-          <div className="flex flex-col gap-4">
-            <div className="w-full h-64 bg-gray-100 rounded-lg overflow-hidden border border-gray-200">
-              <img
-                src={viewArticle.thumbnail}
-                alt="thumbnail"
-                className="w-full h-full object-cover"
-              />
+          <div className="flex flex-col gap-6 font-sans text-gray-800">
+            <div className="relative w-full h-80 rounded-xl overflow-hidden shadow-sm bg-gray-100">
+              <img src={viewArticle.thumbnail || "https://via.placeholder.com/800x400?text=No+Image"} alt="Cover" className="w-full h-full object-cover" />
+              <div className="absolute bottom-0 left-0 w-full bg-gradient-to-t from-black/80 to-transparent p-6 pt-20 text-white">
+                <Tag color="cyan" className="mb-2">{viewArticle.categoryName}</Tag>
+                <h1 className="text-3xl font-bold leading-tight">{viewArticle.title}</h1>
+              </div>
             </div>
 
-            <h1 className="text-2xl font-bold text-gray-800">{viewArticle.title}</h1>
+            <div className="flex items-center gap-4 text-sm text-gray-500 border-b pb-4">
+              <span>Tác giả: <span className="font-semibold text-blue-600">{viewArticle.authorName}</span></span>
+              <span>•</span>
+              <span>{viewArticle.createdAt && format(new Date(viewArticle.createdAt), 'HH:mm dd/MM/yyyy')}</span>
+              <span>•</span>
+              <Tag color={viewArticle.status === 'PUBLISHED' ? 'success' : 'default'}>{viewArticle.status}</Tag>
+            </div>
 
-            <Descriptions bordered column={2} size="small">
-              <Descriptions.Item label="Danh mục">{viewArticle.categoryName}</Descriptions.Item>
-              <Descriptions.Item label="Tác giả">{viewArticle.authorName}</Descriptions.Item>
-              <Descriptions.Item label="Slug">{viewArticle.slug}</Descriptions.Item>
-              <Descriptions.Item label="Ngày tạo">
-                {viewArticle.createdAt && format(new Date(viewArticle.createdAt), 'HH:mm dd/MM/yyyy')}
-              </Descriptions.Item>
-              <Descriptions.Item label="Trạng thái">
-                <Tag color={viewArticle.status === 'PUBLISHED' ? 'success' : 'default'}>
-                  {viewArticle.status}
-                </Tag>
-              </Descriptions.Item>
-            </Descriptions>
+            {viewArticle.shortDescription && (
+              <div className="text-lg font-semibold text-gray-700 italic border-l-4 border-blue-500 pl-4 bg-gray-50 p-4 rounded-r">
+                {viewArticle.shortDescription}
+              </div>
+            )}
 
-            <Divider orientation="left">Nội dung bài viết</Divider>
-            <div
-              className="prose max-w-none p-4 bg-gray-50 rounded-lg border border-gray-100"
-              dangerouslySetInnerHTML={{ __html: viewArticle.content }}
-            />
+            <div className="prose max-w-none text-gray-800 leading-relaxed whitespace-pre-wrap text-base">
+              {viewArticle.content}
+            </div>
+
+            <Divider>Nội dung chi tiết ({viewArticle.pages?.length || 0} trang)</Divider>
+
+            <div className="space-y-12">
+              {viewArticle.pages && viewArticle.pages.length > 0 ? (
+                viewArticle.pages.map((page, index) => (
+                  <div key={page.id || index} className="bg-white">
+                    <div className="flex flex-col md:flex-row gap-6">
+                      {page.imageUrl && (
+                        <div className="md:w-1/2">
+                          <img
+                            src={page.imageUrl}
+                            alt={`Page ${page.pageNumber}`}
+                            className="w-full rounded-lg shadow-sm object-cover"
+                          />
+                          <p className="text-center text-xs text-gray-400 mt-2 italic">Hình minh họa trang {page.pageNumber}</p>
+                        </div>
+                      )}
+                      <div className={`prose text-gray-800 leading-relaxed ${page.imageUrl ? 'md:w-1/2' : 'w-full'}`}>
+                        <h3 className="text-xl font-bold text-gray-400 mb-2 flex items-center gap-2">
+                          <span className="bg-gray-200 text-gray-600 px-2 py-1 rounded text-sm">#{page.pageNumber}</span>
+                        </h3>
+                        <div className="whitespace-pre-wrap text-base">{page.content}</div>
+                      </div>
+                    </div>
+                    {index < viewArticle.pages.length - 1 && <Divider dashed />}
+                  </div>
+                ))
+              ) : (
+                <p className="text-center text-gray-400 italic">Bài viết này chưa có nội dung chi tiết (Pages).</p>
+              )}
+            </div>
           </div>
         )}
       </Modal>

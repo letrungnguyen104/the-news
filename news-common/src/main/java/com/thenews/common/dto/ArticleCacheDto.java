@@ -7,6 +7,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import java.io.Serializable;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Data
 @Builder
@@ -17,9 +18,23 @@ public class ArticleCacheDto implements Serializable {
   private Long id;
   private String title;
   private String slug;
-  private String content;
   private String thumbnail;
+  private String shortDescription;
+  private String content;
   private String status;
   private LocalDateTime createdAt;
   private String authorName;
+  private String categoryName;
+
+  private List<PageDto> pages;
+
+  @Data
+  @NoArgsConstructor
+  @AllArgsConstructor
+  @Builder
+  public static class PageDto implements Serializable {
+    private Integer pageNumber;
+    private String imageUrl;
+    private String content;
+  }
 }

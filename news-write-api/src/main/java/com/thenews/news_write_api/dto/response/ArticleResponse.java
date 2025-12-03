@@ -2,6 +2,7 @@ package com.thenews.news_write_api.dto.response;
 
 import lombok.Data;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Data
 public class ArticleResponse {
@@ -15,4 +16,15 @@ public class ArticleResponse {
   private String categoryName;
   private String content;
   private Long categoryId;
+
+  private String shortDescription;
+  private List<PageResponse> pages;
+
+  @Data
+  public static class PageResponse {
+    private Long id;
+    private Integer pageNumber;
+    private String imageUrl;
+    private String content;
+  }
 }

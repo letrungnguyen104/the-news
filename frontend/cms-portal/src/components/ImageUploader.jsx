@@ -1,10 +1,12 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Upload, Button, message, Image } from 'antd';
 import { UploadOutlined, DeleteOutlined } from '@ant-design/icons';
-
-const ImageUploader = ({ onUploadSuccess, initialImage }) => {
+const ImageUploader = ({ value, onChange }) => {
   const [loading, setLoading] = useState(false);
-  const [imageUrl, setImageUrl] = useState(initialImage || null);
+  const [imageUrl, setImageUrl] = useState(value);
+  useEffect(() => {
+    setImageUrl(value);
+  }, [value]);
 
   const CLOUD_NAME = "druw5dwjr";
   const UPLOAD_PRESET = "news_preset";
@@ -24,7 +26,8 @@ const ImageUploader = ({ onUploadSuccess, initialImage }) => {
       const url = data.secure_url;
 
       setImageUrl(url);
-      onUploadSuccess(url);
+      if (onChange) onChange(url);
+
       onSuccess("Ok");
       message.success("Upload ảnh thành công!");
     } catch (error) {
@@ -38,7 +41,7 @@ const ImageUploader = ({ onUploadSuccess, initialImage }) => {
 
   const handleRemove = () => {
     setImageUrl(null);
-    onUploadSuccess(null);
+    if (onChange) onChange(null);
   };
 
   return (
@@ -48,8 +51,8 @@ const ImageUploader = ({ onUploadSuccess, initialImage }) => {
           <Image
             src={imageUrl}
             alt="Thumbnail"
-            width={200}
-            className="rounded-lg shadow-md"
+            height={150}
+            className="rounded-lg shadow-md object-cover"
           />
           <div className="absolute top-2 right-2">
             <Button
@@ -62,13 +65,9 @@ const ImageUploader = ({ onUploadSuccess, initialImage }) => {
           </div>
         </div>
       ) : (
-        <Upload
-          customRequest={customRequest}
-          showUploadList={false}
-          accept="image/*"
-        >
-          <Button icon={<UploadOutlined />} loading={loading} size="large">
-            Chọn ảnh bìa
+        <Upload customRequest={customRequest} showUploadList={false} fileList={[]} accept="image/*">
+          <Button icon={<UploadOutlined />} loading={loading}>
+            Tải ảnh lên
           </Button>
         </Upload>
       )}

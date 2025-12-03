@@ -1,10 +1,11 @@
 package com.thenews.common.entity;
 
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.*;
 import java.time.LocalDateTime;
-
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import java.util.List;
+import java.util.ArrayList;
 
 @Entity
 @Table(name = "articles")
@@ -24,10 +25,13 @@ public class Article {
   @Column(unique = true)
   private String slug;
 
+  private String thumbnail;
+
+  @Column(columnDefinition = "TEXT")
+  private String shortDescription;
+
   @Column(columnDefinition = "TEXT")
   private String content;
-
-  private String thumbnail;
 
   @Enumerated(EnumType.STRING)
   private Status status;
@@ -37,13 +41,16 @@ public class Article {
 
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "author_id")
-  @JsonIgnoreProperties({ "hibernateLazyInitializer", "handler" })
   private User author;
 
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "category_id")
-  @JsonIgnoreProperties({ "hibernateLazyInitializer", "handler", "articles" })
   private Category category;
+
+  @OneToMany(mappedBy = "article", cascade = CascadeType.ALL, orphanRemoval = true)
+  @JsonManagedReference
+  @Builder.Default
+  private List<ArticlePage> pages = new ArrayList<>();
 
   public enum Status {
     DRAFT, PUBLISHED
