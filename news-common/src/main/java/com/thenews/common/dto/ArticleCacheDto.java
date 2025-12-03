@@ -24,7 +24,10 @@ public class ArticleCacheDto implements Serializable {
   private String status;
   private LocalDateTime createdAt;
   private String authorName;
+
   private String categoryName;
+  private Long categoryId;
+  private String categorySlug;
 
   private List<PageDto> pages;
 

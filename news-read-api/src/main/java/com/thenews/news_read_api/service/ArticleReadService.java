@@ -2,6 +2,7 @@ package com.thenews.news_read_api.service;
 
 import com.thenews.cache.service.RedisCacheService;
 import com.thenews.common.dto.ArticleCacheDto;
+import com.thenews.common.dto.ArticleListResponse;
 import com.thenews.common.entity.Article;
 import com.thenews.news_read_api.repository.ArticleReadRepository;
 import lombok.RequiredArgsConstructor;
@@ -23,6 +24,7 @@ public class ArticleReadService {
   private final RedisCacheService redisCacheService;
 
   private static final Duration CACHE_TTL = Duration.ofMinutes(10);
+  private static final String LATEST_ARTICLES_KEY = "home:latest_articles";
 
   @Transactional(readOnly = true)
   public Optional<ArticleCacheDto> getArticleBySlug(String slug) {
@@ -47,13 +49,15 @@ public class ArticleReadService {
           .id(article.getId())
           .title(article.getTitle())
           .slug(article.getSlug())
+          .thumbnail(article.getThumbnail())
           .shortDescription(article.getShortDescription())
           .content(article.getContent())
-          .thumbnail(article.getThumbnail())
           .status(article.getStatus().name())
           .createdAt(article.getCreatedAt())
           .authorName(article.getAuthor().getUsername())
           .categoryName(article.getCategory() != null ? article.getCategory().getName() : "Uncategorized")
+          .categoryId(article.getCategory() != null ? article.getCategory().getId() : null)
+          .categorySlug(article.getCategory() != null ? article.getCategory().getSlug() : null)
           .pages(pageDtos)
           .build();
 
@@ -62,5 +66,64 @@ public class ArticleReadService {
       return Optional.of(dto);
     }
     return Optional.empty();
+  }
+
+  @Transactional(readOnly = true)
+  public List<ArticleCacheDto> getLatestArticles() {
+    Optional<ArticleListResponse> cached = redisCacheService.get(LATEST_ARTICLES_KEY, ArticleListResponse.class);
+    if (cached.isPresent()) {
+      log.info("Cache HIT: Danh sách bài viết mới nhất");
+      return cached.get().getArticles();
+    }
+    log.info("Cache MISS: Tải danh sách bài mới từ DB");
+    List<Article> articles = articleReadRepository.findAllByStatusOrderByCreatedAtDesc(Article.Status.PUBLISHED);
+    List<ArticleCacheDto> dtos = articles.stream().map(this::mapToDto).toList();
+    redisCacheService.set(LATEST_ARTICLES_KEY, new ArticleListResponse(dtos), CACHE_TTL);
+
+    return dtos;
+  }
+
+  @Transactional(readOnly = true)
+  public List<ArticleCacheDto> getArticlesByCategory(String categorySlug) {
+    return articleReadRepository
+        .findAllByCategory_SlugAndStatusOrderByCreatedAtDesc(categorySlug, Article.Status.PUBLISHED)
+        .stream()
+        .map(article -> ArticleCacheDto.builder()
+            .id(article.getId())
+            .title(article.getTitle())
+            .slug(article.getSlug())
+            .thumbnail(article.getThumbnail())
+            .shortDescription(article.getShortDescription())
+            .categoryName(article.getCategory().getName())
+            .authorName(article.getAuthor().getUsername())
+            .createdAt(article.getCreatedAt())
+            .build())
+        .toList();
+  }
+
+  @Transactional(readOnly = true)
+  public List<ArticleCacheDto> getRelatedArticles(Long categoryId, Long currentArticleId) {
+    return articleReadRepository.findTop4ByCategory_IdAndIdNotOrderByCreatedAtDesc(categoryId, currentArticleId)
+        .stream()
+        .map(this::mapToDto)
+        .toList();
+  }
+
+  private ArticleCacheDto mapToDto(Article article) {
+    return ArticleCacheDto.builder()
+        .id(article.getId())
+        .title(article.getTitle())
+        .slug(article.getSlug())
+        .thumbnail(article.getThumbnail())
+        .shortDescription(article.getShortDescription())
+        .content(article.getContent())
+        .status(article.getStatus().name())
+        .createdAt(article.getCreatedAt())
+        .authorName(article.getAuthor().getUsername())
+
+        .categoryName(article.getCategory() != null ? article.getCategory().getName() : "Uncategorized")
+        .categoryId(article.getCategory() != null ? article.getCategory().getId() : null)
+        .categorySlug(article.getCategory() != null ? article.getCategory().getSlug() : null)
+        .build();
   }
 }

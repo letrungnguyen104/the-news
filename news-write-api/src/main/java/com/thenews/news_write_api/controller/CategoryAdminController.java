@@ -8,7 +8,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.text.Normalizer;
 import java.util.List;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 @RestController
@@ -63,6 +65,16 @@ public class CategoryAdminController {
   }
 
   private String toSlug(String input) {
-    return input.toLowerCase().replaceAll("[^a-z0-9\\s-]", "").replace(" ", "-");
+    if (input == null)
+      return "";
+    String slug = input.toLowerCase();
+    slug = Normalizer.normalize(slug, Normalizer.Form.NFD);
+    Pattern pattern = Pattern.compile("\\p{InCombiningDiacriticalMarks}+");
+    slug = pattern.matcher(slug).replaceAll("");
+    slug = slug.replace("đ", "d");
+    slug = slug.replaceAll("[^a-z0-9\\s-]", "");
+    slug = slug.trim().replaceAll("\\s+", "-");
+
+    return slug;
   }
 }
