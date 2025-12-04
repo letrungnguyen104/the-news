@@ -1,5 +1,6 @@
 package com.thenews.news_write_api.controller;
 
+import com.thenews.cache.service.RedisCacheService;
 import com.thenews.common.entity.Category;
 import com.thenews.news_write_api.dto.response.CategoryResponse;
 import com.thenews.news_write_api.mapper.CategoryMapper;
@@ -20,6 +21,7 @@ public class CategoryAdminController {
 
   private final CategoryRepository categoryRepository;
   private final CategoryMapper categoryMapper;
+  private final RedisCacheService redisCacheService;
 
   @GetMapping
   public ResponseEntity<List<CategoryResponse>> getAll() {
@@ -41,7 +43,9 @@ public class CategoryAdminController {
     if (category.getSlug() == null || category.getSlug().isEmpty()) {
       category.setSlug(toSlug(category.getName()));
     }
-    return ResponseEntity.ok(categoryRepository.save(category));
+    Category categorySaved = categoryRepository.save(category);
+    redisCacheService.delete("categories:all");
+    return ResponseEntity.ok(categorySaved);
   }
 
   @PutMapping("/{id}")
@@ -51,8 +55,10 @@ public class CategoryAdminController {
 
     category.setName(request.getName());
     category.setSlug(toSlug(request.getName()));
+    Category categorySaved = categoryRepository.save(category);
+    redisCacheService.delete("categories:all");
 
-    return ResponseEntity.ok(categoryRepository.save(category));
+    return ResponseEntity.ok(categorySaved);
   }
 
   @DeleteMapping("/{id}")
@@ -61,6 +67,7 @@ public class CategoryAdminController {
       return ResponseEntity.notFound().build();
     }
     categoryRepository.deleteById(id);
+    redisCacheService.delete("categories:all");
     return ResponseEntity.noContent().build();
   }
 

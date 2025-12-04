@@ -7,6 +7,8 @@ import com.thenews.common.entity.Article;
 import com.thenews.news_read_api.repository.ArticleReadRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -72,12 +74,24 @@ public class ArticleReadService {
   public List<ArticleCacheDto> getLatestArticles() {
     Optional<ArticleListResponse> cached = redisCacheService.get(LATEST_ARTICLES_KEY, ArticleListResponse.class);
     if (cached.isPresent()) {
-      log.info("Cache HIT: Danh sách bài viết mới nhất");
       return cached.get().getArticles();
     }
-    log.info("Cache MISS: Tải danh sách bài mới từ DB");
+
     List<Article> articles = articleReadRepository.findAllByStatusOrderByCreatedAtDesc(Article.Status.PUBLISHED);
-    List<ArticleCacheDto> dtos = articles.stream().map(this::mapToDto).toList();
+
+    List<ArticleCacheDto> dtos = articles.stream().map(article -> ArticleCacheDto.builder()
+        .id(article.getId())
+        .title(article.getTitle())
+        .slug(article.getSlug())
+        .thumbnail(article.getThumbnail())
+        .shortDescription(article.getShortDescription())
+        .status(article.getStatus().name())
+        .createdAt(article.getCreatedAt())
+        .authorName(article.getAuthor().getUsername())
+        .categoryName(article.getCategory() != null ? article.getCategory().getName() : "Uncategorized")
+        .categorySlug(article.getCategory() != null ? article.getCategory().getSlug() : null)
+        .build()).toList();
+
     redisCacheService.set(LATEST_ARTICLES_KEY, new ArticleListResponse(dtos), CACHE_TTL);
 
     return dtos;
@@ -103,7 +117,7 @@ public class ArticleReadService {
 
   @Transactional(readOnly = true)
   public List<ArticleCacheDto> getRelatedArticles(Long categoryId, Long currentArticleId) {
-    return articleReadRepository.findTop4ByCategory_IdAndIdNotOrderByCreatedAtDesc(categoryId, currentArticleId)
+    return articleReadRepository.findRelatedArticles(categoryId, currentArticleId, PageRequest.of(0, 4))
         .stream()
         .map(this::mapToDto)
         .toList();

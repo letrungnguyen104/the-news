@@ -1,0 +1,21 @@
+# Bỏ qua thư mục Frontend (Rất quan trọng)
+frontend/
+**/node_modules/
+
+# Bỏ qua Git
+.git/
+.gitignore
+
+# Bỏ qua các file cấu hình IDE
+.idea/
+.vscode/
+*.iml
+
+# Bỏ qua thư mục target (vì ta sẽ build lại trong Docker)
+**/target/
+
+# Bỏ qua các file log
+*.log
+
+# Bỏ qua file docker-compose (không cần copy vào image)
+docker-compose.yml

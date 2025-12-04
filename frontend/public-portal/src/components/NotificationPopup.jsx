@@ -7,7 +7,7 @@ const NotificationPopup = () => {
   const stompClientRef = useRef(null);
 
   useEffect(() => {
-    const socket = new SockJS('http://localhost:8082/ws');
+    const socket = new SockJS('http://localhost/ws');
     const client = Stomp.over(socket);
     client.debug = null;
     stompClientRef.current = client;
