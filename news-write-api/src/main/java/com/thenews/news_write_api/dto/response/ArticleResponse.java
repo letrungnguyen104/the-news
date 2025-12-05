@@ -19,6 +19,7 @@ public class ArticleResponse {
 
   private String shortDescription;
   private List<PageResponse> pages;
+  private Long views;
 
   @Data
   public static class PageResponse {

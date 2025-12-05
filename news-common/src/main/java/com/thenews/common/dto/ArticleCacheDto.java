@@ -31,6 +31,8 @@ public class ArticleCacheDto implements Serializable {
 
   private List<PageDto> pages;
 
+  private Long views;
+
   @Data
   @NoArgsConstructor
   @AllArgsConstructor

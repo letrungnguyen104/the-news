@@ -3,6 +3,7 @@ package com.thenews.news_read_api.repository;
 import com.thenews.common.entity.Article;
 import org.springframework.data.domain.Pageable; // Import thêm
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query; // Import thêm
 import org.springframework.data.repository.query.Param; // Import thêm
 import org.springframework.stereotype.Repository;
@@ -25,4 +26,15 @@ public interface ArticleReadRepository extends JpaRepository<Article, Long> {
 
   @Query("SELECT a FROM Article a LEFT JOIN FETCH a.author LEFT JOIN FETCH a.category WHERE a.category.id = :catId AND a.id <> :artId ORDER BY a.createdAt DESC")
   List<Article> findRelatedArticles(@Param("catId") Long categoryId, @Param("artId") Long articleId, Pageable pageable);
+
+  @Query("SELECT a FROM Article a " +
+      "LEFT JOIN FETCH a.author LEFT JOIN FETCH a.category " +
+      "WHERE a.status = :status " +
+      "AND (LOWER(a.title) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
+      "OR LOWER(a.shortDescription) LIKE LOWER(CONCAT('%', :keyword, '%')))")
+  List<Article> searchArticles(@Param("keyword") String keyword, @Param("status") Article.Status status);
+
+  @Modifying
+  @Query("UPDATE Article a SET a.views = COALESCE(a.views, 0) + :count WHERE a.id = :id")
+  void incrementViews(@Param("id") Long id, @Param("count") Long count);
 }

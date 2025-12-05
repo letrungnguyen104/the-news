@@ -39,4 +39,9 @@ public class ArticleReadController {
       @PathVariable Long currentArticleId) {
     return ResponseEntity.ok(articleReadService.getRelatedArticles(categoryId, currentArticleId));
   }
+
+  @GetMapping("/search")
+  public ResponseEntity<List<ArticleCacheDto>> search(@RequestParam String q) {
+    return ResponseEntity.ok(articleReadService.searchArticles(q));
+  }
 }

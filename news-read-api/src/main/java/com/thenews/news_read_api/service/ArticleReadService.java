@@ -8,6 +8,7 @@ import com.thenews.news_read_api.repository.ArticleReadRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,13 +21,16 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 @Slf4j
+@Transactional(readOnly = true)
 public class ArticleReadService {
 
   private final ArticleReadRepository articleReadRepository;
   private final RedisCacheService redisCacheService;
+  private final ViewCountService viewCountService;
 
   private static final Duration CACHE_TTL = Duration.ofMinutes(10);
   private static final String LATEST_ARTICLES_KEY = "home:latest_articles";
+  private static final Duration SEARCH_CACHE_TTL = Duration.ofMinutes(5);
 
   @Transactional(readOnly = true)
   public Optional<ArticleCacheDto> getArticleBySlug(String slug) {
@@ -47,6 +51,8 @@ public class ArticleReadService {
           .sorted((p1, p2) -> p1.getPageNumber().compareTo(p2.getPageNumber()))
           .collect(Collectors.toList());
 
+      viewCountService.bufferViewCount(article.getId());
+
       ArticleCacheDto dto = ArticleCacheDto.builder()
           .id(article.getId())
           .title(article.getTitle())
@@ -61,6 +67,7 @@ public class ArticleReadService {
           .categoryId(article.getCategory() != null ? article.getCategory().getId() : null)
           .categorySlug(article.getCategory() != null ? article.getCategory().getSlug() : null)
           .pages(pageDtos)
+          .views(article.getViews() == null ? 0 : article.getViews())
           .build();
 
       log.info("Lưu DTO vào Redis...");
@@ -121,6 +128,28 @@ public class ArticleReadService {
         .stream()
         .map(this::mapToDto)
         .toList();
+  }
+
+  @Transactional(readOnly = true)
+  public List<ArticleCacheDto> searchArticles(String keyword) {
+    if (keyword == null || keyword.trim().isEmpty())
+      return List.of();
+
+    String cleanKeyword = keyword.trim().toLowerCase();
+    String cacheKey = "search:" + cleanKeyword;
+    Optional<ArticleListResponse> cached = redisCacheService.get(cacheKey, ArticleListResponse.class);
+    if (cached.isPresent()) {
+      log.info("Cache HIT: Search keyword '{}'", cleanKeyword);
+      return cached.get().getArticles();
+    }
+    log.info("Cache MISS: Search DB keyword '{}'", cleanKeyword);
+    List<Article> articles = articleReadRepository.searchArticles(cleanKeyword, Article.Status.PUBLISHED);
+    List<ArticleCacheDto> dtos = articles.stream().map(this::mapToDto).toList();
+    if (!dtos.isEmpty()) {
+      redisCacheService.set(cacheKey, new ArticleListResponse(dtos), SEARCH_CACHE_TTL);
+    }
+
+    return dtos;
   }
 
   private ArticleCacheDto mapToDto(Article article) {

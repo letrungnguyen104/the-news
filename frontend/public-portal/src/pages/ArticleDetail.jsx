@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import axiosClient from '../api/axiosClient';
 import { Skeleton, Tag, Breadcrumb, Divider, Empty, Card } from 'antd';
-import { Calendar, User, ArrowRight } from 'lucide-react';
+import { Calendar, User, ArrowRight, Eye } from 'lucide-react';
 import { format } from 'date-fns';
 
 const ArticleDetail = () => {
@@ -67,6 +67,10 @@ const ArticleDetail = () => {
             <div className="flex items-center gap-1">
               <Calendar size={16} />
               <span>{format(new Date(article.createdAt), 'dd/MM/yyyy, HH:mm')}</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <Eye size={16} />
+              <span>{article.views || 0} lượt xem</span>
             </div>
           </div>
 

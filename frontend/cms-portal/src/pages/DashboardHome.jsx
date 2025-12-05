@@ -1,7 +1,27 @@
-import { Row, Col, Card, Statistic } from 'antd';
+import { Row, Col, Card, Statistic, Skeleton } from 'antd';
 import { FileTextOutlined, UserOutlined, EyeOutlined, ArrowUpOutlined } from '@ant-design/icons';
+import { useEffect, useState } from 'react';
+import axiosClient from '../api/axiosClient';
 
 const DashboardHome = () => {
+  const [stats, setStats] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const res = await axiosClient.get('/admin/stats');
+        setStats(res);
+      } catch (error) {
+        console.error("Lỗi tải thống kê", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchStats();
+  }, []);
+
+  if (loading) return <Skeleton active paragraph={{ rows: 8 }} />;
   return (
     <div className="space-y-6">
       <h2 className="text-2xl font-bold text-gray-800 mb-6">Tổng quan hệ thống</h2>
@@ -11,9 +31,8 @@ const DashboardHome = () => {
           <Card hoverable className="rounded-xl shadow-sm border-l-4 border-blue-500">
             <Statistic
               title="Tổng bài viết"
-              value={12}
+              value={stats?.totalArticles || 0}
               prefix={<FileTextOutlined className="text-blue-500 mr-2" />}
-              valueStyle={{ color: '#3f8600' }}
             />
           </Card>
         </Col>
@@ -21,19 +40,17 @@ const DashboardHome = () => {
           <Card hoverable className="rounded-xl shadow-sm border-l-4 border-green-500">
             <Statistic
               title="Người dùng"
-              value={5}
+              value={stats?.totalUsers || 0}
               prefix={<UserOutlined className="text-green-500 mr-2" />}
-              valueStyle={{ color: '#3f8600' }}
             />
           </Card>
         </Col>
         <Col xs={24} sm={8}>
           <Card hoverable className="rounded-xl shadow-sm border-l-4 border-purple-500">
             <Statistic
-              title="Lượt xem"
-              value={1200}
+              title="Danh mục"
+              value={stats?.totalCategories || 0}
               prefix={<EyeOutlined className="text-purple-500 mr-2" />}
-              suffix={<span className="text-xs text-gray-400 flex items-center ml-2"><ArrowUpOutlined className="text-green-500" /> +5%</span>}
             />
           </Card>
         </Col>

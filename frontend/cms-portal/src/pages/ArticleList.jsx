@@ -132,6 +132,12 @@ const ArticleList = () => {
       render: (date) => <span className="text-gray-500">{date ? format(new Date(date), 'dd/MM/yyyy') : 'N/A'}</span>,
     },
     {
+      title: 'Lượt xem',
+      dataIndex: 'views',
+      key: 'views',
+      render: (views) => <Tag color="purple">{views || 0}</Tag>,
+    },
+    {
       title: 'Hành động',
       key: 'action',
       width: 150,

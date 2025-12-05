@@ -4,10 +4,23 @@ import { useEffect, useState } from 'react';
 import { Button, Input, Drawer } from 'antd';
 import axiosClient from '../api/axiosClient';
 import NotificationPopup from '../components/NotificationPopup';
+import { useNavigate } from 'react-router-dom';
 
 const PublicLayout = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [categories, setCategories] = useState([]);
+
+  const navigate = useNavigate();
+
+  const handleSearch = (e) => {
+    if (e.key === 'Enter') {
+      const value = e.target.value.trim();
+      if (value) {
+        navigate(`/search?q=${value}`);
+        setIsMobileMenuOpen(false);
+      }
+    }
+  };
 
   useEffect(() => {
     const fetchCategories = async () => {
@@ -50,6 +63,7 @@ const PublicLayout = () => {
               <Input
                 placeholder="Tìm kiếm tin tức..."
                 prefix={<Search size={16} className="text-gray-400" />}
+                onKeyDown={handleSearch}
                 className="rounded-full bg-gray-100 border-none w-64"
               />
             </div>

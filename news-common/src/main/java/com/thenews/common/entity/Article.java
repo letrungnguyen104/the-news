@@ -39,6 +39,9 @@ public class Article {
   private LocalDateTime createdAt;
   private LocalDateTime updatedAt;
 
+  @Column(columnDefinition = "bigint default 0")
+  private Long views = 0L;
+
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "author_id")
   private User author;
