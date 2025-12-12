@@ -32,11 +32,11 @@ public class RedisCacheService {
 
   public void set(String key, Object value, Duration ttl) {
     try {
-      log.info("💾 START: Đang ghi vào Redis key={}", key);
+      log.info("START: Đang ghi vào Redis key={}", key);
       redisTemplate.opsForValue().set(key, value, ttl);
-      log.info("✅ SUCCESS: Đã lưu vào Redis thành công!");
+      log.info("SUCCESS: Đã lưu vào Redis thành công!");
     } catch (Exception e) {
-      log.error("❌ FAILURE: Lỗi ghi cache! Nguyên nhân: {}", e.getMessage());
+      log.error("FAILURE: Lỗi ghi cache! Nguyên nhân: {}", e.getMessage());
       e.printStackTrace();
     }
   }
